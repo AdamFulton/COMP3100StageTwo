@@ -4,32 +4,33 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+
 import java.io.*;
 
 public class Client {
-	static final int MAX_INPUT = 20000;
+
 	static final int DEFAULT_PORT = 50000;
 
 	public static void main(String args[]) {
 		try {
 			Socket sock = new Socket("localhost", DEFAULT_PORT);
 			PrintStream output = new PrintStream(sock.getOutputStream());
-			InputStream severIn = sock.getInputStream();
+			
+			BufferedReader input = new BufferedReader(new InputStreamReader(sock.getInputStream()));
 			String serverInput = "";
 			String clientOut;
 			Boolean gotData = false;
-			boolean gotServers = false;
-			Boolean sentJob = false;
-			boolean ok = false;
-			int max = 0;
-			String largestServerName = "";
-			List<List<String>> servers = new ArrayList<List<String>>();
-			List<List<String>> jobs = new ArrayList<List<String>>();
+			Boolean gotServers = false;
+			//Stack<String> serverCommands = new Stack<String>();
 			List<List<String>> serverData = new ArrayList<List<String>>();
-			List<Integer> serverCPUCores = new ArrayList<Integer>();
+			List<String> servers = new ArrayList<String>();
 
-			byte[] data;
-			int count = 0;
+
+			List<List<String>> jobs = new ArrayList<List<String>>();
+		
+		
+		
+
 
 			// Handshake Begins
 
@@ -38,15 +39,14 @@ public class Client {
 
 			// https://stackoverflow.com/questions/19839172/how-to-read-all-of-inputstream-in-server-socket-java
 
-			data = new byte[MAX_INPUT];
-			count = severIn.read(data);
+	
 
 			// https://stackoverflow.com/questions/10475898/receive-byte-using-bytearrayinputstream-from-a-socket
 
-			serverInput = serverMsg(count, data);
 
-			System.out.println(serverInput);
-			if (!serverInput.equals("OK" +"\n")) {
+
+		
+			if (!input.readLine().equals("OK")) {
 				output.print("QUIT"+"\n");
 				sock.close();
 			}
@@ -54,13 +54,10 @@ public class Client {
 			clientOut = "AUTH "+System.getProperty("user.name")+"\n";
 			output.print(clientOut);
 
-			count = 0;
-			data = new byte[MAX_INPUT];
-			count = severIn.read(data);
-			serverInput = serverMsg(count, data);
+		
 
 		
-			if (!serverInput.equals("OK"+"\n")) {
+			if (!input.readLine().equals("OK")) {
 				output.print("QUIT"+"\n");
 				sock.close();
 			}
@@ -68,132 +65,74 @@ public class Client {
 			clientOut = "REDY"+"\n";
 			output.print(clientOut);
 
-			// Handshake completed. Loop begins now
+			
 
 			while (true) {
 
-				count = 0;
-				data = new byte[MAX_INPUT];
-				count = severIn.read(data);
-				serverInput = serverMsg(count, data);
-				System.out.print(serverInput);
+			serverInput = input.readLine();
+
+		
+
 			
 
-				// checks if there is no more jobs left to schedule and closes the socket if
-				// true
-				if (serverInput.equals("NONE"+"\n")) {
-					output.print("QUIT"+"\n");
-					sock.close();
-					break;
-				} else {
+			
 
-					// checks if the server has sent a job to be scheduled
-					if (serverCmd(serverInput).equals("JOBN")) {
-						
+				if (serverCmd(serverInput).equals("JOBN")) {
 
-						jobs = createList(serverInput);
+					jobs = createList(serverInput);
 
-						String cpuCores = jobs.get(0).get(4);
-						String memory = jobs.get(0).get(5);
-						String disk = jobs.get(0).get(6);
+					String cpuCores = jobs.get(0).get(4);
+					String memory = jobs.get(0).get(5);
+					String disk = jobs.get(0).get(6);
 
-						output.print("GETS Capable " + cpuCores + " " + memory + " " + disk+"\n");
+					output.print("GETS Capable " + cpuCores + " " + memory + " " + disk+"\n");
+				
+				
+					
+				
+				} else if (serverCmd(serverInput).equals("DATA")) {
 
-						/*
-						 * Checks if the server has sent a data command in response to a gets command
-						 * sent by the client
-						 */
-					} else if (serverCmd(serverInput).equals("DATA")) {
 
-						serverData = createList(serverInput);
+					serverData = createList(serverInput);
 
-						// checks if the client has recieved the data before sending the OK command
-						if (serverData.size() >= 1) {
+					System.out.println(serverData);
 
-							output.print("OK"+"\n");
-							gotData = true;
-						}
+					if (serverData.size() >= 1) {
 
-						// checks if the client has recievied the data about the current capable servers
-						// for the job
-					} else if (gotData) {
+						output.print("OK" + "\n");
+						gotData = true;
 
-						servers = createList(serverInput);
-
-						// checks to see if the client has recieved data from all the capable servers
-						// before issuing to OK command
-						if (servers.size() == Integer.valueOf(serverData.get(0).get(1))) {
-
-							if (ok == false) {
-								output.print("OK"+"\n");
-								ok = true;
-							}
-						}
-						/*
-						 * Checks if the largest server has already been calculated if not the code is
-						 * executed to find the largest server. (only runs one)
-						 */
-						if (gotServers == false) {
-
-							// iterates through the servers list and adds the cpu cores for each server
-							// to a new list
-							for (int i = 0; i < Integer.valueOf(serverData.get(0).get(1)); i++) {
-
-								if (servers.size() > 1) {
-									serverCPUCores.add(Integer.valueOf(servers.get(i).get(4)));
-								}
-
-								gotServers = true;
-							}
-
-							max = allToLargest(serverCPUCores);
-
-							// iterates through the server list and returns the name of the server
-							// that has the same number of CPU cores as the value stored in max
-							for (int i = 0; i < servers.size(); i++) {
-
-								if (Integer.valueOf(servers.get(i).get(4)) == max) {
-									largestServerName = servers.get(i).get(0);
-									break;
-								}
-							}
-						}
-
-						/*
-						 * Checks if the server has sent the . command and if so replies with a SCHD
-						 * command and schedules a job to the server
-						 */
-						if (serverCmd(serverInput).equals(".") && sentJob == false) {
-
-							String JobId = jobs.get(0).get(2);
-
-							output.print("SCHD " + JobId + " " + largestServerName + " " + "0"+"\n");
-							sentJob = true;
-						}
-						/*
-						 * checks if the server has sent a OK command and if true the client sends a
-						 * REDY command telling the server it is ready for the next job
-						 */
-						if (serverInput.equals("OK"+"\n")) {
-
-							output.print("REDY"+"\n");
-							gotData = false;
-							sentJob = false;
-							ok = false;
-
-						}
-						/*
-						 * checks if the server has sent a job complete command. if so the server
-						 * responds with the REDY command
-						 */
-					} else if (serverCmd(serverInput).contains("JCPL")) {
-
-						output.print("REDY"+"\n");
+					
 					}
 
-				}
+
+					if (gotData) {
+					for (String server = input.readLine(); server != null; server = input.readLine()) {
+						
+							servers.add(server);
+						
+							if (servers.size() == Integer.valueOf(serverData.get(0).get(1))) {
+
+								output.print("OK"+ "\n");
+								break;
+							}
+
+					 }
+					 System.out.println(servers);
+					}
+				
 			
+				
+					
+				}
+				
 			}
+
+
+		
+
+		
+			
 
 		} catch (Exception e) {
 			System.out.println(e);
