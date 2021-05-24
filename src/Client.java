@@ -21,12 +21,16 @@ public class Client {
 			String clientOut;
 			Boolean gotData = false;
 			Boolean gotServers = false;
-			//Stack<String> serverCommands = new Stack<String>();
+			
 			List<List<String>> serverData = new ArrayList<List<String>>();
-			List<String> servers = new ArrayList<String>();
+		
+			List<List<String>> servers = new ArrayList<List<String>>();
 
 
 			List<List<String>> jobs = new ArrayList<List<String>>();
+			List<Integer> serverCPUCores = new ArrayList<Integer>();
+			String largestServerName = "";
+			int max = 0;
 		
 		
 		
@@ -70,14 +74,18 @@ public class Client {
 			while (true) {
 
 			serverInput = input.readLine();
+				//System.out.println(serverInput);
+				if (serverInput.equals("NONE")) {
 
-		
+					output.print("QUIT" +"\n");
+					sock.close();
+					break;
+				} else {
 
-			
+			 if (serverCmd(serverInput).contains("JCPL")) {
 
-			
-
-				if (serverCmd(serverInput).equals("JOBN")) {
+				output.print("REDY"+"\n");
+			} else if (serverCmd(serverInput).equals("JOBN")) {
 
 					jobs = createList(serverInput);
 
@@ -85,7 +93,7 @@ public class Client {
 					String memory = jobs.get(0).get(5);
 					String disk = jobs.get(0).get(6);
 
-					output.print("GETS Capable " + cpuCores + " " + memory + " " + disk+"\n");
+					output.print("GETS Avail " + cpuCores + " " + memory + " " + disk+"\n");
 				
 				
 					
@@ -95,7 +103,7 @@ public class Client {
 
 					serverData = createList(serverInput);
 
-					System.out.println(serverData);
+					//System.out.println(serverData);
 
 					if (serverData.size() >= 1) {
 
@@ -104,36 +112,75 @@ public class Client {
 
 					
 					}
-
-
 					if (gotData) {
+
+					
 					for (String server = input.readLine(); server != null; server = input.readLine()) {
 						
-							servers.add(server);
+							servers.addAll(createList(server));
+
+							
 						
 							if (servers.size() == Integer.valueOf(serverData.get(0).get(1))) {
 
 								output.print("OK"+ "\n");
 								break;
 							}
+						
 
 					 }
-					 System.out.println(servers);
+					 if (gotServers == false) {
+
+						// iterates through the servers list and adds the cpu cores for each server
+						// to a new list
+						for (int i = 0; i < Integer.valueOf(serverData.get(0).get(1)); i++) {
+
+							if (servers.size() > 1) {
+								serverCPUCores.add(Integer.valueOf(servers.get(i).get(4)));
+							}
+
+							gotServers = true;
+						}
+
+						max = allToLargest(serverCPUCores);
+
+						// iterates through the server list and returns the name of the server
+						// that has the same number of CPU cores as the value stored in max
+						for (int i = 0; i < servers.size(); i++) {
+
+							if (Integer.valueOf(servers.get(i).get(4)) == max) {
+								largestServerName = servers.get(i).get(0);
+								break;
+							}
+						}
 					}
-				
-			
-				
+
+
+					 serverInput = input.readLine();
+
+
+					 if (serverCmd(serverInput).equals(".")) {
+
+						String JobId = jobs.get(0).get(2);
+						output.print("SCHD " + JobId + " " + largestServerName + " " + "0"+"\n");
+					 }
+
+					 serverInput = input.readLine();
 					
+					 if (serverInput.equals("OK")) {
+
+						output.print("REDY"+"\n");
+						gotData = false;
+						servers.removeAll(servers);
+						serverCPUCores.removeAll(serverCPUCores);
+						serverData.removeAll(serverData);
+						gotServers = false;
+						
+					 }	
+						}		
 				}
-				
+				}	
 			}
-
-
-		
-
-		
-			
-
 		} catch (Exception e) {
 			System.out.println(e);
 		}
@@ -153,7 +200,7 @@ public class Client {
 
 		for (int i = 0; i < serverCores.size(); i++) {
 
-			if (serverCores.get(i) > max) {
+			if (serverCores.get(i) <= max) {
 
 				max = serverCores.get(i);
 			}
@@ -161,6 +208,7 @@ public class Client {
 		retval = max;
 
 		return retval;
+		//$673967.88
 
 	}
 
