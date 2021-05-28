@@ -21,13 +21,16 @@ public class Client {
 			String clientOut;
 			Boolean gotData = false;
 			Boolean gotServers = false;
+			boolean test = false;
+
+			int i = 0;
 			
 			
 			List<List<String>> serverData = new ArrayList<List<String>>();
 		
 			List<List<String>> servers = new ArrayList<List<String>>();
 
-			ArrayList<Integer> serverNums = new ArrayList<Integer>();
+			ArrayList<String> serverUsed = new ArrayList<String>();
 
 			List<List<String>> jobs = new ArrayList<List<String>>();
 			List<Integer> serverCPUCores = new ArrayList<Integer>();
@@ -85,7 +88,7 @@ public class Client {
 
 				} else {
 
-					if (serverCmd(server).equals("JOBN")) {
+					if (serverCmd(server).equals("JOBN") || serverCmd(server).equals("JOBP")) {
 
 						jobs = createList(server);
 
@@ -107,20 +110,27 @@ public class Client {
 						
 							
 						}
-						}  if (gotData &&  gotServers == false) {
+						}  if (gotData &&  gotServers == false && test == false) {
 
 							for (String serverList = input.readLine(); serverList != null; serverList = input.readLine()) {
 
 							
 
 								servers.addAll(createList(serverList));
+								System.out.println(servers.size());
+								System.out.println(Integer.valueOf(serverData.get(0).get(1)));
 								
 								if (servers.size() == Integer.valueOf(serverData.get(0).get(1))) {
 									
 									output.print("OK"+ "\n");
 									gotServers = true;
 									break;
-								}
+								} else if (serverData.get(0).get(1).equals("0")) {
+										output.print("PSHJ" +"\n");
+										test = true;
+										break;
+										
+									}
 							
 	
 						 }
@@ -129,11 +139,34 @@ public class Client {
 						
 						if (serverCmd(server).equals(".")) {
 
-							
-						
-									largestServerName = findServer(serverData, servers, serverCPUCores);
+
+								largestServerName = findServer(serverData, servers, serverCPUCores);
 									String JobId = jobs.get(0).get(2);
-									output.print("SCHD " + JobId + " " + largestServerName.get(0) + " " + "0" +"\n");
+
+
+								
+
+										output.print("SCHD " + JobId + " " + largestServerName.get(0) + " " + largestServerName.get(1) +"\n");
+								
+									
+
+								
+
+
+									
+
+											
+										
+											
+									
+
+
+									
+
+									
+
+								
+									
 							
 
 
@@ -155,27 +188,63 @@ public class Client {
 							serverData.removeAll(serverData);
 							gotServers = false;
 							largestServerName.removeAll(largestServerName);
+							test = false;
 							
 						 }
 						 if (serverCmd(server).contains("JCPL")) {
 
-							output.print("REDY"+"\n");
+
+							List<List<String>> temp = new ArrayList<List<String>>();
+							
+							temp = createList(server);
+
+							output.print("LSTJ" + temp.get(0).get(3) + " " + temp.get(0).get(4) + "\n");
+
+
+							for (String s = input.readLine(); s != null; s = input.readLine()) {
+
+								if (serverCmd(s).equals("DATA")) {
+
+									output.print("OK" + "\n");
+										
+
+								} else if (serverCmd(s).equals(".")) {
+
+									if (test == false) {
+									output.print("TERM" + temp.get(0).get(3) + " " + temp.get(0).get(4) + "\n");
+									output.print("REDY"+"\n");
+									break;
+									} else {
+										output.print("REDY"+"\n");
+										break;
+									}
+								} else {
+
+									test = true;
+									output.print("OK"+"\n");
+									
+
+								}
+
+							}
+
+							test = false;
+						
 						 
 						 
-							}		
+								
 
 
 					
-						}
+						
 
 
 				
 				
 
+						 }
 						}
-			
-		
-			
+					}
 		} catch (Exception e) {
 			System.out.println(e);
 		}
