@@ -17,20 +17,22 @@ public class Client {
 			PrintStream output = new PrintStream(sock.getOutputStream());
 			
 			BufferedReader input = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-			String serverInput = "";
+			
 			String clientOut;
 			Boolean gotData = false;
 			Boolean gotServers = false;
+			
 			
 			List<List<String>> serverData = new ArrayList<List<String>>();
 		
 			List<List<String>> servers = new ArrayList<List<String>>();
 
+			ArrayList<Integer> serverNums = new ArrayList<Integer>();
 
 			List<List<String>> jobs = new ArrayList<List<String>>();
 			List<Integer> serverCPUCores = new ArrayList<Integer>();
-			String largestServerName = "";
-			int max = 0;
+			ArrayList<String> largestServerName = new ArrayList<String>();
+		
 		
 		
 		
@@ -70,117 +72,110 @@ public class Client {
 			output.print(clientOut);
 
 			
+			for (String server = input.readLine(); server != null; server = input.readLine()) {
 
-			while (true) {
 
-			serverInput = input.readLine();
-				//System.out.println(serverInput);
-				if (serverInput.equals("NONE")) {
 
-					output.print("QUIT" +"\n");
+
+				if (server.equals("NONE")) {
+
+					output.print("QUIT" + "\n");
 					sock.close();
 					break;
+
 				} else {
 
-			 if (serverCmd(serverInput).contains("JCPL")) {
+					if (serverCmd(server).equals("JOBN")) {
 
-				output.print("REDY"+"\n");
-			} else if (serverCmd(serverInput).equals("JOBN")) {
+						jobs = createList(server);
 
-					jobs = createList(serverInput);
+						String cpuCores = jobs.get(0).get(4);
+						String memory = jobs.get(0).get(5);
+						String disk = jobs.get(0).get(6);
 
-					String cpuCores = jobs.get(0).get(4);
-					String memory = jobs.get(0).get(5);
-					String disk = jobs.get(0).get(6);
-
-					output.print("GETS Avail " + cpuCores + " " + memory + " " + disk+"\n");
-				
-				
-					
-				
-				} else if (serverCmd(serverInput).equals("DATA")) {
-
-
-					serverData = createList(serverInput);
-
-					//System.out.println(serverData);
-
-					if (serverData.size() >= 1) {
-
-						output.print("OK" + "\n");
-						gotData = true;
-
-					
-					}
-					if (gotData) {
-
-					
-					for (String server = input.readLine(); server != null; server = input.readLine()) {
+						output.print("GETS Avail " + cpuCores + " " + memory + " " + disk+"\n");
 						
-							servers.addAll(createList(server));
+						
+					} else if (serverCmd(server).equals("DATA")) {
+
+						serverData = createList(server);
+
+						if (serverData.size() >=1) {
+
+							output.print("OK" + "\n");
+							gotData = true;
+						
+							
+						}
+						}  if (gotData &&  gotServers == false) {
+
+							for (String serverList = input.readLine(); serverList != null; serverList = input.readLine()) {
+
+							
+
+								servers.addAll(createList(serverList));
+								
+								if (servers.size() == Integer.valueOf(serverData.get(0).get(1))) {
+									
+									output.print("OK"+ "\n");
+									gotServers = true;
+									break;
+								}
+							
+	
+						 }
+					
+						}
+						
+						if (serverCmd(server).equals(".")) {
 
 							
 						
-							if (servers.size() == Integer.valueOf(serverData.get(0).get(1))) {
+									largestServerName = findServer(serverData, servers, serverCPUCores);
+									String JobId = jobs.get(0).get(2);
+									output.print("SCHD " + JobId + " " + largestServerName.get(0) + " " + "0" +"\n");
+							
 
-								output.print("OK"+ "\n");
-								break;
-							}
+
+									}
+
+							
+							
+								
+
+							
 						
 
-					 }
-					 if (gotServers == false) {
+						if (server.equals("OK")) {
 
-						// iterates through the servers list and adds the cpu cores for each server
-						// to a new list
-						for (int i = 0; i < Integer.valueOf(serverData.get(0).get(1)); i++) {
+							output.print("REDY"+"\n");
+							gotData = false;
+							servers.removeAll(servers);
+							serverCPUCores.removeAll(serverCPUCores);
+							serverData.removeAll(serverData);
+							gotServers = false;
+							largestServerName.removeAll(largestServerName);
+							
+						 }
+						 if (serverCmd(server).contains("JCPL")) {
 
-							if (servers.size() > 1) {
-								serverCPUCores.add(Integer.valueOf(servers.get(i).get(4)));
-							}
-
-							gotServers = true;
-						}
-
-						max = allToLargest(serverCPUCores);
-
-						// iterates through the server list and returns the name of the server
-						// that has the same number of CPU cores as the value stored in max
-						for (int i = 0; i < servers.size(); i++) {
-
-							if (Integer.valueOf(servers.get(i).get(4)) == max) {
-								largestServerName = servers.get(i).get(0);
-								break;
-							}
-						}
-					}
+							output.print("REDY"+"\n");
+						 
+						 
+							}		
 
 
-					 serverInput = input.readLine();
-
-
-					 if (serverCmd(serverInput).equals(".")) {
-
-						String JobId = jobs.get(0).get(2);
-						output.print("SCHD " + JobId + " " + largestServerName + " " + "0"+"\n");
-					 }
-
-					 serverInput = input.readLine();
 					
-					 if (serverInput.equals("OK")) {
+						}
 
-						output.print("REDY"+"\n");
-						gotData = false;
-						servers.removeAll(servers);
-						serverCPUCores.removeAll(serverCPUCores);
-						serverData.removeAll(serverData);
-						gotServers = false;
-						
-					 }	
-						}		
-				}
-				}	
-			}
+
+				
+				
+
+						}
+			
+		
+			
 		} catch (Exception e) {
 			System.out.println(e);
 		}
@@ -191,8 +186,42 @@ public class Client {
 	 * function takes in a list of the number of server CPU cores for each server.
 	 * and returns the largest number of server cores in the list
 	 */
-	public static int allToLargest(List<Integer> serverCores) {
 
+	 public static ArrayList<String> findServer(List<List<String>> serverData, List<List<String>> servers, List<Integer> serverCPUCores) {
+		int max = 0;
+
+		ArrayList<String> retval = new ArrayList<String>();
+		for (int i = 0; i < Integer.valueOf(serverData.get(0).get(1)); i++) {
+
+			if (servers.size() >= 1) {
+				serverCPUCores.add(Integer.valueOf(servers.get(i).get(4)));
+			}
+
+		
+		}
+
+		max = findSmallestCoreCount(serverCPUCores);
+
+		System.out.println(max);
+
+		// iterates through the server list and returns the name of the server
+		// that has the same number of CPU cores as the value stored in max
+		for (int i = 0; i < servers.size(); i++) {
+
+			if (Integer.valueOf(servers.get(i).get(4)) == max) {
+				retval.add(servers.get(i).get(0));
+				retval.add(servers.get(i).get(1));
+				break;
+			}
+		}
+
+
+
+		return retval;
+	 }
+	public static int findSmallestCoreCount(List<Integer> serverCores) {
+
+		Collections.sort(serverCores);
 		int retval = 0;
 		Integer max = 0;
 
@@ -208,7 +237,7 @@ public class Client {
 		retval = max;
 
 		return retval;
-		//$673967.88
+	
 
 	}
 
@@ -308,5 +337,7 @@ public class Client {
 
 		return retval;
 	}
+	
 
+	
 }
