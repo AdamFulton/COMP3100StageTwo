@@ -51,7 +51,7 @@ public class Client {
 			clientOut = "AUTH " + System.getProperty("user.name") + "\n";
 			output.print(clientOut);
 
-			System.out.println(input.readLine())git ;
+			System.out.println(input.readLine());
 			if (!input.readLine().equals("OK")) {
 				output.print("QUIT" + "\n");
 				sock.close();
