@@ -36,19 +36,22 @@ public class Client {
 
 			clientOut = "HELO" + "\n";
 			output.print(clientOut);
+			System.out.println(input.readLine());
 
 			// https://stackoverflow.com/questions/19839172/how-to-read-all-of-inputstream-in-server-socket-java
 
 			// https://stackoverflow.com/questions/10475898/receive-byte-using-bytearrayinputstream-from-a-socket
-
+			System.out.println(input.readLine());
 			if (!input.readLine().equals("OK")) {
 				output.print("QUIT" + "\n");
 				sock.close();
 			}
+		
 
 			clientOut = "AUTH " + System.getProperty("user.name") + "\n";
 			output.print(clientOut);
 
+			System.out.println(input.readLine();
 			if (!input.readLine().equals("OK")) {
 				output.print("QUIT" + "\n");
 				sock.close();
@@ -56,11 +59,11 @@ public class Client {
 
 			clientOut = "REDY" + "\n";
 			output.print(clientOut);
-
+			System.out.println(input.readLine());
 			// Handshake completed. Loop begins now	
 			for (String server = input.readLine(); server != null; server = input.readLine()) {
 
-
+				System.out.println(server);
 				// checks if there is no more jobs left to schedule and closes the socket if true
 				if (server.equals("NONE")) {
 
@@ -104,8 +107,6 @@ public class Client {
 						for (String serverList = input.readLine(); serverList != null; serverList = input.readLine()) {
 
 							servers.addAll(createList(serverList));
-							System.out.println(servers.size());
-							System.out.println(Integer.valueOf(serverData.get(0).get(1)));
 
 							// checks to see if the client has recieved data from all the available servers
 							// before issuing to OK command
