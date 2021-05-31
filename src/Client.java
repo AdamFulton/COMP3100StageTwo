@@ -25,6 +25,9 @@ public class Client {
 			boolean noServers = false;
 			Boolean noJobs = false;
 
+			// keeps track of the number of times a jobs have been pushed back into the queue
+			int queueCount = 0;
+
 			// variables to store data recieved from the server.
 			List<List<String>> serverData = new ArrayList<List<String>>();
 			List<List<String>> servers = new ArrayList<List<String>>();
@@ -78,8 +81,13 @@ public class Client {
 						String memory = jobs.get(0).get(5);
 						String disk = jobs.get(0).get(6);
 
+						if (queueCount < 50) {
 						output.print("GETS Avail " + cpuCores + " " + memory + " " + disk + "\n");
+						} else {
 
+							output.print("GETS Capable " + cpuCores + " " + memory + " " + disk + "\n");
+						}
+						
 						/*
 						 * Checks if the server has sent a data command in response to a gets command
 						 * sent by the client
@@ -118,6 +126,7 @@ public class Client {
 							} else if (serverData.get(0).get(1).equals("0")) {
 								output.print("PSHJ" + "\n");
 								noServers = true;
+								queueCount++;
 								break;
 
 							}
@@ -136,7 +145,7 @@ public class Client {
 						String JobId = jobs.get(0).get(2);
 
 						output.print("SCHD " + JobId + " " + selectedServer.get(0) + " " + selectedServer.get(1)+ "\n");
-
+						queueCount = 0;
 					}
 						/*	
 						 * checks if the server has sent an OK command and if true the client sends a
@@ -154,6 +163,7 @@ public class Client {
 						gotServers = false;
 						selectedServer.removeAll(selectedServer);
 						noServers = false;
+						
 
 					}
 						/*
